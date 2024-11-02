@@ -115,8 +115,8 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.TokenAuthentication',
-        'users.authentications.CustomJWTAuthentication',
-        'users.authentications.CustomJWTAuthentication',
+        # 'users.authentications.CustomJWTAuthentication',
+        # 'users.authentications.CustomJWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
