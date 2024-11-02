@@ -4,9 +4,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 from decouple import config
 
-SECRET_KEY = "django-insecure-6+-l+d2fi3saztr*nqn#h214oi)!s98+bs%@0#d90ec4#g)69j"
+# SECRET_KEY = "django-insecure-6+-l+d2fi3saztr*nqn#h214oi)!s98+bs%@0#d90ec4#g)69j"
 
-DEBUG = True
+SECRET_KEY = config('SECRET_KEY')
+
+DEBUG = config('DEBUG')
 
 ALLOWED_HOSTS = []
 
