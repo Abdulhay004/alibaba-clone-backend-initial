@@ -94,6 +94,7 @@ local_settings.py
 # ignore virtualenvs
 venv/
 env/
+alibaba/
 
 # Custom
 .vscode/

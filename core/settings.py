@@ -8,6 +8,7 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
 sys.path.append(os.path.join(BASE_DIR, 'apps'))
 # kdkdkdsfjdfljsaflsdj
 
@@ -15,6 +16,14 @@ sys.path.append(os.path.join(BASE_DIR, 'apps'))
 # SECRET_KEY = "django-insecure-6+-l+d2fi3saztr*nqn#h214oi)!s98+bs%@0#d90ec4#g)69j"
 
 # SUPERUSER_EMAIL = config('DJANGO_SUPERUSER_EMAIL')
+
+
+# kdkdkdsfjdfljsaflsdj
+
+from decouple import config
+
+# SECRET_KEY = "django-insecure-6+-l+d2fi3saztr*nqn#h214oi)!s98+bs%@0#d90ec4#g)69j"
+
 
 SECRET_KEY = config('SECRET_KEY')
 
@@ -34,21 +43,33 @@ DJANGO_APPS = [
 EXTERNAL_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
+
     'drf_spectacular',
+
+    # 'drf_spectacular',
+
     # 'django_redis',
     # 'modeltranslation',
     # 'django_filters',
     # 'rest_framework.authtoken',
+
     'drf_yasg',
+
+    # 'drf_yasg',
+
     # 'ckeditor',
     # 'ckeditor_uploader',
 ]
+
 
 LOCAL_APPS = [
     'user'
 ]
 
 INSTALLED_APPS = DJANGO_APPS + EXTERNAL_APPS + LOCAL_APPS
+
+
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -87,10 +108,21 @@ AUTHENTICATION_BACKENDS = [
 
 # Database
 
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.sqlite3",
+#         "NAME": BASE_DIR / "db.sqlite3",
+#     }
+# }
+
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': config('DB_ENGINE', default='django.db.backends.sqlite3'),
+        'NAME': config('DB_NAME', default='db.sqlite3'),
+        'USER': config('DB_USER', default=''),
+        'PASSWORD': config('DB_PASSWORD', default=''),
+        'HOST': config('DB_HOST', default=''),
+        'PORT': config('DB_PORT', default=''),
     }
 }
 
@@ -111,7 +143,21 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# Internationalization
+REST_FRAMEWORK = {
+    # 'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+        # 'users.authentications.CustomJWTAuthentication',
+        # 'users.authentications.CustomJWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+    'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 10,
+}
 
 LANGUAGE_CODE = "en-us"
 
