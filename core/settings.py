@@ -1,21 +1,54 @@
 from pathlib import Path
+from decouple import config
+import sys
+import os
+
+# from django.conf.global_settings import AUTHENTICATION_BACKENDS
+# from drf_spectacular.views import AUTHENTICATION_CLASSES
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "django-insecure-6+-l+d2fi3saztr*nqn#h214oi)!s98+bs%@0#d90ec4#g)69j"
+sys.path.append(os.path.join(BASE_DIR, 'apps'))
+# kdkdkdsfjdfljsaflsdj
 
-DEBUG = True
+
+# SECRET_KEY = "django-insecure-6+-l+d2fi3saztr*nqn#h214oi)!s98+bs%@0#d90ec4#g)69j"
+
+# SUPERUSER_EMAIL = config('DJANGO_SUPERUSER_EMAIL')
+
+SECRET_KEY = config('SECRET_KEY')
+
+DEBUG = config('DEBUG')
 
 ALLOWED_HOSTS = []
 
-INSTALLED_APPS = [
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
+DJANGO_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
 ]
+
+EXTERNAL_APPS = [
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'drf_spectacular',
+    # 'django_redis',
+    # 'modeltranslation',
+    # 'django_filters',
+    # 'rest_framework.authtoken',
+    'drf_yasg',
+    # 'ckeditor',
+    # 'ckeditor_uploader',
+]
+
+LOCAL_APPS = [
+    'user'
+]
+
+INSTALLED_APPS = DJANGO_APPS + EXTERNAL_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -44,8 +77,13 @@ TEMPLATES = [
         },
     },
 ]
+AUTH_USER_MODEL = 'user.User'
 
 WSGI_APPLICATION = "core.wsgi.application"
+
+AUTHENTICATION_BACKENDS = [
+    'user.backends.CustomModelBackend',
+]
 
 # Database
 
