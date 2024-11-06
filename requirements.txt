@@ -21,10 +21,7 @@ jsonschema==4.23.0
 jsonschema-specifications==2024.10.1
 nodeenv==1.9.1
 packaging==24.1
-<<<<<<< HEAD
 pillow==11.0.0
-=======
->>>>>>> origin/main
 platformdirs==4.3.6
 pluggy==1.5.0
 pre-commit==3.6.0
