@@ -3,9 +3,6 @@ from decouple import config
 import sys
 import os
 
-# from django.conf.global_settings import AUTHENTICATION_BACKENDS
-# from drf_spectacular.views import AUTHENTICATION_CLASSES
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -16,11 +13,6 @@ sys.path.append(os.path.join(BASE_DIR, 'apps'))
 # SECRET_KEY = "django-insecure-6+-l+d2fi3saztr*nqn#h214oi)!s98+bs%@0#d90ec4#g)69j"
 
 # SUPERUSER_EMAIL = config('DJANGO_SUPERUSER_EMAIL')
-
-
-# kdkdkdsfjdfljsaflsdj
-
-from decouple import config
 
 # SECRET_KEY = "django-insecure-6+-l+d2fi3saztr*nqn#h214oi)!s98+bs%@0#d90ec4#g)69j"
 
@@ -43,20 +35,12 @@ DJANGO_APPS = [
 EXTERNAL_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
-
     'drf_spectacular',
-
-    # 'drf_spectacular',
-
-    # 'django_redis',
+    'django_redis',
     # 'modeltranslation',
     # 'django_filters',
     # 'rest_framework.authtoken',
-
     'drf_yasg',
-
-    # 'drf_yasg',
-
     # 'ckeditor',
     # 'ckeditor_uploader',
 ]
@@ -68,7 +52,11 @@ LOCAL_APPS = [
 
 INSTALLED_APPS = DJANGO_APPS + EXTERNAL_APPS + LOCAL_APPS
 
+REDIS_HOST = config('REDIS_HOST', default='localhost')
+REDIS_PORT = config('REDIS_PORT', default='6379')
+REDIS_DB = config('REDIS_DB', default='1')
 
+REDIS_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}'
 
 
 MIDDLEWARE = [
@@ -108,23 +96,23 @@ AUTHENTICATION_BACKENDS = [
 
 # Database
 
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.sqlite3",
-#         "NAME": BASE_DIR / "db.sqlite3",
-#     }
-# }
-
 DATABASES = {
-    'default': {
-        'ENGINE': config('DB_ENGINE', default='django.db.backends.sqlite3'),
-        'NAME': config('DB_NAME', default='db.sqlite3'),
-        'USER': config('DB_USER', default=''),
-        'PASSWORD': config('DB_PASSWORD', default=''),
-        'HOST': config('DB_HOST', default=''),
-        'PORT': config('DB_PORT', default=''),
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': config('DB_ENGINE', default='django.db.backends.sqlite3'),
+#         'NAME': config('DB_NAME', default='db.sqlite3'),
+#         'USER': config('DB_USER', default=''),
+#         'PASSWORD': config('DB_PASSWORD', default=''),
+#         'HOST': config('DB_HOST', default=''),
+#         'PORT': config('DB_PORT', default=''),
+#     }
+# }
 
 # Password validation
 
@@ -158,6 +146,19 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 10,
 }
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
 
 LANGUAGE_CODE = "en-us"
 

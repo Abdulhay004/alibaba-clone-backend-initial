@@ -61,11 +61,12 @@ class CustomUserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    phone_number = models.CharField(max_length=13, unique=True)
-    email = models.EmailField(max_length=255, unique=True)
+    phone_number = models.CharField(max_length=13, blank=True)
+    email = models.EmailField(max_length=255, blank=True)
     password = models.CharField(max_length=255)
-    first_name = models.CharField(max_length=255, blank=True)
-    last_name = models.CharField(max_length=255, blank=True)
+    username = models.CharField(max_length=255, blank=True, null=True)
+    first_name = models.CharField(max_length=255, blank=True, null=True)
+    last_name = models.CharField(max_length=255, blank=True, null=True)
     gender = models.CharField(max_length=10, blank=True)
     is_verified = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
@@ -81,7 +82,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = CustomUserManager()
 
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = "id"
+    # USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['phone_number']
 
     class Meta:
@@ -93,7 +95,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         ]
 
     def __str__(self):
-        return self.first_name
+        return self.phone_number
 
 class SellerPolicy(models.Model):
     seller_user = models.OneToOneField(User, on_delete=models.CASCADE)
