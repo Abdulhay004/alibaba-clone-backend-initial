@@ -9,6 +9,7 @@ from django.conf import settings
 from .serializers import VerifyCodeSerializer
 from user.models import User
 from . import services
+from .tasks import send_email
 
 # Redis konfiguratsiyasi
 redis_conn = redis.StrictRedis(settings.REDIS_HOST, settings.REDIS_PORT, settings.REDIS_DB)
@@ -53,7 +54,7 @@ class SignUpView(APIView):
                 expire_in=2 * 60,
                 check_if_exists=False
             )
-        send_email(email, otp_code)
+        send_email.delay(email, otp_code)
 
         # OTP secret ni Redisga saqlash
         if redis_conn is None:
