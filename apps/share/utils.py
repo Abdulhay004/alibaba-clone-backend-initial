@@ -4,9 +4,14 @@ from typing import Union
 
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
+import redis
+
+from django.conf import settings
+
 
 from user.models import Group
 from user.models import User, Policy
+redis_conn = redis.StrictRedis(settings.REDIS_HOST, settings.REDIS_PORT, settings.REDIS_DB)
 
 def add_permissions(obj: Union[User, Group, Policy], permissions: list[str]):
     def get_perm(perm: str)-> list:
@@ -24,3 +29,12 @@ def add_permissions(obj: Union[User, Group, Policy], permissions: list[str]):
     elif isinstance(obj, Group) or isinstance(obj, Policy):
         obj.permissions.clear()
         obj.permissions.add(*map(get_perm, permissions))
+
+def check_otp(phone_number_or_email: str, otp_code: str, otp_secret: str) -> None:
+    stored_otp = redis_conn.get(f"otp:{phone_number_or_email}")
+    stored_secret = redis_conn.get(f"otp_secret:{phone_number_or_email}")
+
+    if stored_otp is None or stored_secret is None:
+        raise ValueError("OTP yoki maxfiy kalit topilmadi.")
+    if stored_otp.decode('utf-8') != otp_code or stored_secret.decode('utf-8') != otp_secret:
+        raise ValueError("OTP kod yoki maxfiy kalit noto'g'ri.")

@@ -4,7 +4,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import User
 from .utils import generate_otp, send_email
+from share.utils import check_otp
 from django.conf import settings
+from .serializers import VerifyCodeSerializer
+from user.models import User
+from . import services
 
 # Redis konfiguratsiyasi
 redis_conn = redis.StrictRedis(settings.REDIS_HOST, settings.REDIS_PORT, settings.REDIS_DB)
@@ -77,3 +81,39 @@ class SignUpView(APIView):
                                 status=status.HTTP_201_CREATED)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
+class VerifyView(APIView):
+    def patch(self, request, otp_secret:str):
+
+        serializer = VerifyCodeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        phone_number = serializer.validated_data['phone_number']
+        otp_code = serializer.validated_data['otp_code']
+
+        # phone_number = request.data["phone_number"]
+        # otp_code = request.data["otp_code"]
+
+        # Foydalanuvchini tekshirish
+        user = User.objects.filter(phone_number=phone_number).first()
+        if not user:
+            return Response({"detail": "Foydalanuvchi topilmadi."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # OTP kodini tekshirish
+        try:
+            check_otp(phone_number, otp_code, otp_secret)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Foydalanuvchini tasdiqlash
+        user.is_verified = True
+        user.is_active = True
+        user.save()
+
+        # Redisdan OTP va secretni o'chirish
+        redis_conn.delete(f"{phone_number}:otp_secret")
+        redis_conn.delete(f"{phone_number}:otp")
+
+        # Tokenlarni yaratish
+        tokens = services.UserService.create_tokens(user)
+
+        return Response(tokens, status=status.HTTP_200_OK)

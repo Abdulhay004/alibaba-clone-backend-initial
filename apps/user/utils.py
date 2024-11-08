@@ -2,6 +2,13 @@ from django.core.mail import send_mail
 import random
 import string
 import time
+import redis
+
+from django.conf import settings
+from drf_yasg.openapi import Response
+
+redis_conn = redis.StrictRedis(settings.REDIS_HOST, settings.REDIS_PORT, settings.REDIS_DB)
+
 # OTP saqlash uchun oddiy lug'at
 otp_storage = {}
 
