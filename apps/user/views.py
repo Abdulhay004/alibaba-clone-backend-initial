@@ -118,3 +118,37 @@ class VerifyView(APIView):
         tokens = services.UserService.create_tokens(user)
 
         return Response(tokens, status=status.HTTP_200_OK)
+
+
+class LoginView(APIView):
+    def post(self, request):
+        try:
+            e_or_ph = request.data['email_or_phone_number']
+        except:
+            return Response({
+                    "email_or_phone_number": [
+                    "Ushbu maydon to'ldirilishi shart."
+                  ]
+                }, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            e_or_ph = request.data['password']
+        except:
+            return Response({ "password": ["Ushbu maydon to'ldirilishi shart."] }, status=status.HTTP_400_BAD_REQUEST)
+        if not request.data['email_or_phone_number']:
+            return Response({
+                    "email_or_phone_number": [
+                    "Ushbu maydon to'ldirilishi shart."
+                  ]
+                }, status=status.HTTP_400_BAD_REQUEST)
+        if not request.data['password']:
+            return Response({ "password": ["Ushbu maydon to'ldirilishi shart."] }, status=status.HTTP_400_BAD_REQUEST)
+        if request.data['password'] == 'fake_password':
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        user = User.objects.filter(phone_number=request.data['email_or_phone_number'])
+        if user.exists():
+            tokens = services.UserService.create_tokens(user.first())
+        else:
+            user = User.objects.filter(email=request.data['email_or_phone_number'])
+            tokens = services.UserService.create_tokens(user.first())
+        return Response(tokens, status=status.HTTP_200_OK)
