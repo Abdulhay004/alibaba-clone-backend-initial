@@ -1,4 +1,6 @@
 from pathlib import Path
+
+import rest_framework.authentication
 from decouple import config
 import sys
 import os
@@ -35,6 +37,7 @@ EXTERNAL_APPS = [
     'rest_framework_simplejwt',
     'drf_spectacular',
     'django_redis',
+    # 'django.contrib.contenttypes',
     # 'modeltranslation',
     # 'django_filters',
     # 'rest_framework.authtoken',
@@ -45,7 +48,8 @@ EXTERNAL_APPS = [
 
 
 LOCAL_APPS = [
-    'user'
+    'share',
+    'user',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + EXTERNAL_APPS + LOCAL_APPS
@@ -85,6 +89,8 @@ AUTHENTICATION_BACKENDS = [
     'user.backends.CustomModelBackend',
 ]
 
+
+
 # Database
 
 DATABASES = {
@@ -123,15 +129,12 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 REST_FRAMEWORK = {
-    # 'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.TokenAuthentication',
-        # 'users.authentications.CustomJWTAuthentication',
-        # 'users.authentications.CustomJWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
+        'rest_framework.permissions.IsAuthenticated',
     ],
     'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',

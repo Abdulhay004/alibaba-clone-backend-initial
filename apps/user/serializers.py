@@ -44,3 +44,14 @@ class VerifyCodeSerializer(serializers.Serializer):
             return True
         else:
             return False
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            'gender', 'first_name', 'last_name', 'phone_number',
+            'email', 'user_trade_role', 'company', 'photo',
+            'bio', 'birth_date', 'country', 'city',
+            'district', 'street_address', 'postal_code',
+            'second_phone_number', 'building_number', 'apartment_number'
+        ]

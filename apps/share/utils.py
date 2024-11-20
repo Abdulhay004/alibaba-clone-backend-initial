@@ -1,10 +1,11 @@
 # apps/share/utils.py
-
 from typing import Union
 
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 import redis
+
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from django.conf import settings
 
@@ -30,6 +31,7 @@ def add_permissions(obj: Union[User, Group, Policy], permissions: list[str]):
         obj.permissions.clear()
         obj.permissions.add(*map(get_perm, permissions))
 
+
 def check_otp(phone_number_or_email: str, otp_code: str, otp_secret: str) -> None:
     stored_otp = redis_conn.get(f"otp:{phone_number_or_email}")
     stored_secret = redis_conn.get(f"otp_secret:{phone_number_or_email}")
@@ -38,3 +40,10 @@ def check_otp(phone_number_or_email: str, otp_code: str, otp_secret: str) -> Non
         raise ValueError("OTP yoki maxfiy kalit topilmadi.")
     if stored_otp.decode('utf-8') != otp_code or stored_secret.decode('utf-8') != otp_secret:
         raise ValueError("OTP kod yoki maxfiy kalit noto'g'ri.")
+
+def check_perm(perm):
+    """Checks permission based on a boolean value."""
+    if perm:
+        return [IsAuthenticated]
+    else:
+        return [AllowAny]

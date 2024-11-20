@@ -1,4 +1,5 @@
 from enum import Enum
+from django.db import models
 
 class BaseEnum(Enum):
     @classmethod
@@ -18,3 +19,8 @@ class PolicyNameEnum(BaseEnum):
     BUYER_POLICY = "buyer_policy"
     SELLER_POLICY = "seller_policy"
     ADMIN_POLICY = "admin_policy"
+
+
+class GenderChoices(models.TextChoices):
+    MALE = 'M', 'Erkak'
+    FEMALE = 'F', 'Ayol'

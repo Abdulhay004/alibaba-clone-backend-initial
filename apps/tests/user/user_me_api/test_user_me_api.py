@@ -1,8 +1,6 @@
 import pytest
-
 from user.models import User, Group
 from user.models import SellerUser, BuyerUser
-
 
 @pytest.fixture
 def user_me_data(request, user_factory, tokens):

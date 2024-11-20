@@ -6,7 +6,11 @@ from .models import User
 from .utils import generate_otp, send_email
 from share.utils import check_otp
 from django.conf import settings
-from .serializers import VerifyCodeSerializer
+from .serializers import VerifyCodeSerializer, UserProfileSerializer
+from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated
+from share.permissions import GeneratePermissions
+
 from user.models import User
 from . import services
 from .tasks import send_email
@@ -152,3 +156,43 @@ class LoginView(APIView):
             user = User.objects.filter(email=request.data['email_or_phone_number'])
             tokens = services.UserService.create_tokens(user.first())
         return Response(tokens, status=status.HTTP_200_OK)
+
+
+
+class UsersMeView(GeneratePermissions, generics.RetrieveAPIView, generics.UpdateAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = User.objects.all()
+    serializer_class = UserProfileSerializer
+
+    # def get_object(self):
+    #     return self.request.user.userprofile
+
+    # def get(self, request, *args, **kwargs):
+    #     user_profile = self.get_object()
+    #     # Foydalanuvchining turiga qarab ma'lumotlarni tayyorlash
+    #     data = {
+    #         "gender": user_profile.gender,
+    #         "first_name": user_profile.first_name,
+    #         "last_name": user_profile.last_name,
+    #         "phone_number": user_profile.phone_number,
+    #         "email": user_profile.email,
+    #         "user_trade_role": user_profile.user_trade_role,
+    #         "photo": user_profile.photo,
+    #         "bio": user_profile.bio,
+    #         "birth_date": user_profile.birth_date,
+    #         "country": user_profile.country,
+    #         "city": user_profile.city,
+    #         "district": user_profile.district,
+    #         "street_address": user_profile.street_address,
+    #         "postal_code": user_profile.postal_code,
+    #         "second_phone_number": user_profile.second_phone_number,
+    #         "building_number": user_profile.building_number,
+    #         "apartment_number": user_profile.apartment_number,
+    #     }
+    #
+    #     return Response(data)
+
+    def patch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return Response({'detail':'Authenticate error!!'}, status=status.HTTP_401_UNAUTHORIZED)
+        return self.partial_update(request, *args, **kwargs)

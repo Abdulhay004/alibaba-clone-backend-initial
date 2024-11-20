@@ -1,206 +1,182 @@
+from django.contrib.auth.base_user import AbstractBaseUser
+from django.contrib.auth.models import Permission, PermissionsMixin, GroupManager
+from django.contrib.postgres.indexes import HashIndex
 from django.db import models
-from django.contrib.auth.models import (AbstractBaseUser, PermissionsMixin,
-                                        BaseUserManager, Permission)
-
-import uuid
+from django.db.models import Q
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
-class Policy(models.Model):
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=255, unique=True)
-    is_active = models.BooleanField(default=False)
-    created_by = models.UUIDField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+from .managers import CustomUserManager
 
-    permissions = models.ManyToManyField(Permission, related_name='policy_permissions', blank=True)
+from share.enums import UserRole, GenderChoices, PolicyNameEnum
+from share.models import BaseModel, BaseUserInfo
+
+
+def user_directory_path(instance, filename):
+    return f"users/{instance.user.username}/{filename}"
+
+
+def national_image_path(instance, filename):
+    return f"national/{instance.user.username}/images/{filename}"
+
+
+class Group(BaseModel):
+    id = models.BigAutoField(primary_key=True)
+    name = models.CharField(max_length=150, unique=True)
+    policies = models.ManyToManyField("user.Policy", blank=True)
+    permissions = models.ManyToManyField(
+        Permission,
+        verbose_name=_("permissions"),
+        blank=True,
+        related_name="custom_group",
+    )
+    objects = GroupManager()
 
     class Meta:
-        db_table = 'policy'
-        ordering = ["-created_at"]
-        app_label = 'user'
-
-
-class Group(models.Model):
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=255)
-    is_active = models.BooleanField(default=False)
-    created_by = models.UUIDField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    policies = models.ManyToManyField(Policy, related_name='groups', blank=True)
-    permissions = models.ManyToManyField(Permission, related_name='group_permissions', blank=True)
-
-    class Meta:
-        db_table = 'group'
+        db_table = "group"
+        verbose_name = _("Group")
         ordering = ['-created_at']
-        app_label = 'user'
+
+    def __str__(self):
+        return self.name
 
 
-class CustomUserManager(BaseUserManager):
-    def create_user(self, email, password=None, **extra_fields):
-        if not email:
-            raise ValueError('Emailni kiritish shart.')
-        email = self.normalize_email(email)
-        user = self.model(email=email, **extra_fields)
-        user.set_password(password)
-        user.save(using=self._db)
-        return user
-
-    def create_superuser(self, email, password=None, **extra_fields):
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
-
-        if extra_fields.get('is_staff') is not True:
-            raise ValueError('Superuser uchun is_staff = True bo\'lishi shart.')
-        if extra_fields.get('is_superuser') is not True:
-            raise ValueError('Superuser uchun is_superuser = True bo\'lishi shart.')
-
-        return self.create_user(email, password, **extra_fields)
-
-class User(AbstractBaseUser, PermissionsMixin):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    phone_number = models.CharField(max_length=13, blank=True)
-    email = models.EmailField(max_length=255, blank=True)
-    password = models.CharField(max_length=255)
-    username = models.CharField(max_length=255, blank=True, null=True)
-    first_name = models.CharField(max_length=255, blank=True, null=True)
-    last_name = models.CharField(max_length=255, blank=True, null=True)
-    gender = models.CharField(max_length=10, blank=True)
+class User(AbstractBaseUser, PermissionsMixin, BaseModel):
+    """
+    A user in the system.
+    """
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    phone_number = models.CharField(max_length=13, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
     is_verified = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
-    last_login = models.DateTimeField(null=True, blank=True)
-    is_active = models.BooleanField(default=False)
-    created_by = models.UUIDField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    groups = models.ManyToManyField(Group, related_name='users', blank=True)
-    policies = models.ManyToManyField(Policy, related_name='users', blank=True)
+    last_login = models.DateTimeField(blank=True, null=True)
+    policies = models.ManyToManyField("user.Policy", blank=True)
+    gender = models.CharField(
+        max_length=10, null=True, blank=True, choices=GenderChoices.choices
+    )
+    groups = models.ManyToManyField(
+        Group,
+        verbose_name=_("groups"),
+        blank=True,
+        help_text=_(
+            "The groups this user belongs to. A user will get all permissions "
+            "granted to each of their groups."
+        ),
+        related_name="user_set",
+        related_query_name="user",
+    )
 
     objects = CustomUserManager()
 
     USERNAME_FIELD = "id"
-    # USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['phone_number']
 
     class Meta:
-        db_table = 'user'
+        db_table = "user"
+        verbose_name = _("User")
         ordering = ['-created_at']
+        constraints = [
+            models.CheckConstraint(
+                check=~Q(email=None, phone_number=None),
+                name="check_email_or_phone_number",
+            )
+        ]
+        indexes = [
+            HashIndex(fields=['first_name'], name='%(class)s_first_name_hash_idx'),
+            HashIndex(fields=['last_name'], name='%(class)s_last_name_hash_idx'),
+            models.Index(fields=['phone_number'], name='%(class)s_phone_number_idx'),
+            models.Index(fields=['email'], name='%(class)s_email_idx'),
+        ]
         permissions = [
-            ('can_view', 'Can view something'),
-            ('can_edit', 'Can edit something'),
+            ("view_all_users", "Can view all users"),
+            ("view_user_me", "Can view user me"),
+            ("change_user_me", "Can change user me"),
         ]
 
     def __str__(self):
-        return self.phone_number
+        """
+        Returns a string representation of the user.
 
-class SellerPolicy(models.Model):
-    seller_user = models.OneToOneField(User, on_delete=models.CASCADE)
-    is_active = models.BooleanField(default=True)
-    created_by = models.CharField(max_length=100)
+        Returns:
+            str: The string representation of the user.
+        """
+        return self.email
 
-    # Permissions
-    can_add_log_entry = models.BooleanField(default=False)
-    can_change_log_entry = models.BooleanField(default=False)
-    can_delete_log_entry = models.BooleanField(default=False)
-    can_view_log_entry = models.BooleanField(default=False)
+    def __repr__(self):
+        return "User object [id={id} username={username} full_name={full_name}]".format(
+            id=self.id,
+            full_name=self.full_name,
+            username=self.email,
+        )
 
-    can_add_group = models.BooleanField(default=False)
-    can_change_group = models.BooleanField(default=False)
-    can_delete_group = models.BooleanField(default=False)
-    can_view_group = models.BooleanField(default=False)
+    @property
+    def username(self):
+        """
+        Returns the user's username.
 
-    can_add_permission = models.BooleanField(default=False)
-    can_change_permission = models.BooleanField(default=False)
-    can_delete_permission = models.BooleanField(default=False)
-    can_view_permission = models.BooleanField(default=False)
+        Returns:
+            str: The user's username.
+        """
+        return self.email or self.phone_number
 
-    can_add_content_type = models.BooleanField(default=False)
+    @property
+    def full_name(self):
+        """
+        Returns the user's full name.
 
-    # Product-related permissions
-    can_add_product = models.BooleanField(default=False)
-    can_change_product = models.BooleanField(default=False)
-    can_delete_product = models.BooleanField(default=False)
-    can_view_product = models.BooleanField(default=False)
+        Returns:
+            str: The user's full name.
+        """
+        return f"{self.last_name} {self.first_name}"
 
-    # Category-related permissions
-    can_view_category = models.BooleanField(default=False)
+    def is_roles_exists(self, *roles: UserRole) -> bool:
+        return self.groups.filter(name__in=[role.value for role in roles], is_active=True).exists()
 
-    # Color-related permissions
-    can_add_color = models.BooleanField(default=False)
-    can_change_color = models.BooleanField(default=False)
-    can_delete_color = models.BooleanField(default=False)
-    can_view_color = models.BooleanField(default=False)
 
-    # Image-related permissions
-    can_add_image = models.BooleanField(default=False)
-    can_change_image = models.BooleanField(default=False)
-    can_delete_image = models.BooleanField(default=False)
-    can_view_image = models.BooleanField(default=False)
+class Policy(BaseModel):
+    name = models.CharField(max_length=100, choices=PolicyNameEnum.choices())
+    permissions = models.ManyToManyField(Permission)
 
-    def __str__(self):
-        return f"Policy for {self.seller_user.username}"
+    class Meta:
+        db_table = "policy"
+        verbose_name = _("Policy")
+        verbose_name_plural = _("Policies")
+        ordering = ['-created_at']
+        indexes = [
+            HashIndex(
+                fields=['name'], name='%(class)s_name_hash_idx'
+            )
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=['name', 'is_active'],
+                                    name='%(class)s_unique_name_is_active')
+        ]
 
-class SellerUser(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    policy = models.OneToOneField(SellerPolicy, on_delete=models.CASCADE, null=True, blank=True)
-    company = models.CharField(max_length=50, blank=True)
-    image = models.BinaryField(null=True, blank=True)
-    bio = models.CharField(max_length=255, blank=True)
-    birth_date = models.DateTimeField(null=True, blank=True)
-    country = models.CharField(max_length=50, blank=True)
-    city = models.CharField(max_length=50, blank=True)
-    district = models.CharField(max_length=50, blank=True)
-    street_address = models.CharField(max_length=50, blank=True)
-    postal_code = models.CharField(max_length=10, blank=True)
-    second_phone_number = models.CharField(max_length=13, blank=True)
-    building_number = models.CharField(max_length=50, blank=True)
-    apartment_number = models.CharField(max_length=50, blank=True)
-    created_by = models.UUIDField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-class BuyerPolicy(models.Model):
-    buyer_user = models.OneToOneField(User, on_delete=models.CASCADE)
-    is_active = models.BooleanField(default=True)
-    created_by = models.CharField(max_length=100)
-
-    # Permissions
-    can_add_group = models.BooleanField(default=False)
-    can_change_group = models.BooleanField(default=False)
-    can_delete_group = models.BooleanField(default=False)
-    can_view_group = models.BooleanField(default=False)
-
-    can_add_policy = models.BooleanField(default=False)
-    can_change_policy = models.BooleanField(default=False)
-    can_delete_policy = models.BooleanField(default=False)
-
-    can_add_seller_user = models.BooleanField(default=False)
-    can_change_seller_user = models.BooleanField(default=False)
-    can_delete_seller_user = models.BooleanField(default=False)
+    def get_permissions_set(self):
+        return {f"{perm.content_type.app_label}.{perm.codename}" for perm in self.permissions.all()}
 
     def __str__(self):
-        return f"Policy for {self.buyer_user.first_name}"
+        return self.name
 
-class BuyerUser(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    policy = models.OneToOneField(BuyerPolicy, on_delete=models.CASCADE, null=True, blank=True)
-    image = models.BinaryField(null=True, blank=True)
-    bio = models.CharField(max_length=255, blank=True)
-    birth_date = models.DateTimeField(null=True, blank=True)
-    country = models.CharField(max_length=50, blank=True)
-    city = models.CharField(max_length=50, blank=True)
-    district = models.CharField(max_length=50, blank=True)
-    street_address = models.CharField(max_length=50, blank=True)
-    postal_code = models.CharField(max_length=10, blank=True)
-    second_phone_number = models.CharField(max_length=13, blank=True)
-    building_number = models.CharField(max_length=50, blank=True)
-    apartment_number = models.CharField(max_length=50, blank=True)
-    created_by = models.UUIDField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    def __repr__(self):
+        return "Policy object [id={id} name={name}]".format(
+            id=self.id,
+            name=self.name,
+        )
+
+
+class SellerUser(BaseUserInfo):
+    user = models.OneToOneField(User, related_name="seller_profile", on_delete=models.CASCADE)
+    company = models.CharField(max_length=20, null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.id}"
+
+
+class BuyerUser(BaseUserInfo):
+    user = models.OneToOneField(User, related_name="buyer_profile", on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.id}"
