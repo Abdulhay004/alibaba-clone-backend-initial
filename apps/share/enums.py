@@ -22,5 +22,5 @@ class PolicyNameEnum(BaseEnum):
 
 
 class GenderChoices(models.TextChoices):
-    MALE = 'M', 'Erkak'
-    FEMALE = 'F', 'Ayol'
+    MALE = 'Male', 'M'
+    FEMALE = 'Female', 'F'

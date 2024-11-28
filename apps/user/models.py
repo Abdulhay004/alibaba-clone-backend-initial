@@ -42,18 +42,31 @@ class Group(BaseModel):
 
 
 class User(AbstractBaseUser, PermissionsMixin, BaseModel):
-    """
-    A user in the system.
-    """
-    first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
+    first_name = models.CharField(max_length=100, blank=True)
+    last_name = models.CharField(max_length=100, blank=True)
     phone_number = models.CharField(max_length=13, blank=True, null=True)
-    email = models.EmailField(blank=True, null=True)
+    email = models.EmailField(blank=True, unique=True)
     is_verified = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
     last_login = models.DateTimeField(blank=True, null=True)
     policies = models.ManyToManyField("user.Policy", blank=True)
+
+    # new fields
+    bio = models.CharField(max_length=400, blank=True, null=True)
+    country = models.CharField(max_length=50, blank=True, null=True)
+    photo = models.ImageField(blank=True, null=True)
+    birth_date = models.DateField(null=True, blank=True)
+    city = models.CharField(max_length=50, blank=True, null=True)
+    company = models.CharField(max_length=50, blank=True, null=True)
+    district = models.CharField(max_length=50, blank=True, null=True)
+    street_address = models.CharField(max_length=100, blank=True, null=True)
+    postal_code = models.CharField(max_length=20, blank=True, null=True)
+    second_phone_number = models.CharField(max_length=15, blank=True, null=True)
+    building_number = models.CharField(max_length=10, blank=True, null=True)
+    user_trade_role = models.CharField(max_length=50, blank=True, null=True)
+    apartment_number = models.CharField(max_length=10, blank=True, null=True)
+
     gender = models.CharField(
         max_length=10, null=True, blank=True, choices=GenderChoices.choices
     )
@@ -71,7 +84,7 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
 
     objects = CustomUserManager()
 
-    USERNAME_FIELD = "id"
+    USERNAME_FIELD = "email"
 
     class Meta:
         db_table = "user"

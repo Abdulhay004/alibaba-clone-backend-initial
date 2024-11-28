@@ -6,9 +6,10 @@ from .models import User
 from .utils import generate_otp, send_email
 from share.utils import check_otp
 from django.conf import settings
-from .serializers import VerifyCodeSerializer, UserProfileSerializer
-from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated
+from .serializers import (VerifyCodeSerializer, UserProfileSerializer,
+                          BuyerSerializer, SellerSerializer)
+from rest_framework import generics, parsers
+from rest_framework.permissions import IsAuthenticated, AllowAny, DjangoModelPermissions
 from share.permissions import GeneratePermissions
 
 from user.models import User
@@ -95,9 +96,6 @@ class VerifyView(APIView):
         phone_number = serializer.validated_data['phone_number']
         otp_code = serializer.validated_data['otp_code']
 
-        # phone_number = request.data["phone_number"]
-        # otp_code = request.data["otp_code"]
-
         # Foydalanuvchini tekshirish
         user = User.objects.filter(phone_number=phone_number).first()
         if not user:
@@ -160,39 +158,34 @@ class LoginView(APIView):
 
 
 class UsersMeView(GeneratePermissions, generics.RetrieveAPIView, generics.UpdateAPIView):
-    permission_classes = [IsAuthenticated]
-    queryset = User.objects.all()
     serializer_class = UserProfileSerializer
+    http_method_names = ['get','patch']
+    queryset = User.objects.all()
+    permission_classes = (IsAuthenticated,)
 
-    # def get_object(self):
-    #     return self.request.user.userprofile
+    def get_object(self):
+        return self.request.user
 
-    # def get(self, request, *args, **kwargs):
-    #     user_profile = self.get_object()
-    #     # Foydalanuvchining turiga qarab ma'lumotlarni tayyorlash
-    #     data = {
-    #         "gender": user_profile.gender,
-    #         "first_name": user_profile.first_name,
-    #         "last_name": user_profile.last_name,
-    #         "phone_number": user_profile.phone_number,
-    #         "email": user_profile.email,
-    #         "user_trade_role": user_profile.user_trade_role,
-    #         "photo": user_profile.photo,
-    #         "bio": user_profile.bio,
-    #         "birth_date": user_profile.birth_date,
-    #         "country": user_profile.country,
-    #         "city": user_profile.city,
-    #         "district": user_profile.district,
-    #         "street_address": user_profile.street_address,
-    #         "postal_code": user_profile.postal_code,
-    #         "second_phone_number": user_profile.second_phone_number,
-    #         "building_number": user_profile.building_number,
-    #         "apartment_number": user_profile.apartment_number,
-    #     }
-    #
-    #     return Response(data)
+    def get_serializer_class(self):
+        user = self.get_object()
+        group = user.groups.first()
+        if group and group.name=='seller' and self.request.method=='GET':
+                return SellerSerializer
+        elif  group and group.name=='buyer' and self.request.method=='GET':
+                return BuyerSerializer
+        return self.serializer_class
+
+    def get_permissions(self):
+        permissions = super().get_permissions()
+        # Agar foydalanuvchi 'seller' yoki 'buyer' guruhida bo'lmasa va GET so'rov qilsa, 403 status kodi qaytaring
+        if self.request.method == 'GET' and \
+                not self.request.user.groups.filter(name='seller').exists() and \
+                not self.request.user.groups.filter(name='buyer').exists():
+            self.permission_denied(self.request)  # 403 status kodi
+
+        return permissions
 
     def patch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return Response({'detail':'Authenticate error!!'}, status=status.HTTP_401_UNAUTHORIZED)
-        return self.partial_update(request, *args, **kwargs)
+        if not request.data['first_name']:
+            return Response(status=400)
+        return super().partial_update(request, *args, **kwargs)

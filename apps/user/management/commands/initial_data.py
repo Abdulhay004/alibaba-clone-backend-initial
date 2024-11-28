@@ -1,6 +1,6 @@
 
 import yaml
-from core.settings import config
+from decouple import config
 from django.core.management.base import BaseCommand
 from share.enums import UserRole, PolicyNameEnum
 from share.utils import add_permissions

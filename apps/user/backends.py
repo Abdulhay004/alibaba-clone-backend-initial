@@ -12,7 +12,7 @@ class CustomModelBackend(ModelBackend):
                 username_field = "email"
             else:
                 username_field = "phone_number"
-            users = get_user_model().objects.filter({username_field: username})
+            users = get_user_model().objects.filter(**{username_field: username})
             if users.exists():
                 user = users.first()
             else:
