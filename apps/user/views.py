@@ -6,8 +6,8 @@ from .models import User
 from .utils import generate_otp, send_email
 from share.utils import check_otp
 from django.conf import settings
-from .serializers import (VerifyCodeSerializer, UserProfileSerializer,
-                          BuyerSerializer, SellerSerializer)
+from .serializers import (VerifyCodeSerializer,BuyerSerializer,
+                          SellerSerializer, UserSerializer)
 from rest_framework import generics, parsers
 from rest_framework.permissions import IsAuthenticated, AllowAny, DjangoModelPermissions
 from share.permissions import GeneratePermissions
@@ -158,7 +158,7 @@ class LoginView(APIView):
 
 
 class UsersMeView(GeneratePermissions, generics.RetrieveAPIView, generics.UpdateAPIView):
-    serializer_class = UserProfileSerializer
+    serializer_class = UserSerializer
     http_method_names = ['get','patch']
     queryset = User.objects.all()
     permission_classes = (IsAuthenticated,)

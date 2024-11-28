@@ -69,33 +69,6 @@ class VerifyCodeSerializer(serializers.Serializer):
         else:
             return False
 
-class UserProfileSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(required=False)
-    first_name = serializers.CharField(max_length=50, required=False)
-    last_name = serializers.CharField(max_length=50, required=False)
-    email = serializers.EmailField(required=False)
-    photo = serializers.ImageField(required=False)
-    bio = serializers.CharField(max_length=400, required=False)
-    birth_date = serializers.DateField(required=False)
-    # company = serializers.CharField(read_only=True, required=False)
-    country = serializers.CharField(max_length=50, required=False)
-    city = serializers.CharField(max_length=50, required=False)
-    district = serializers.CharField(max_length=50, required=False)
-    street_address = serializers.CharField(max_length=100, required=False)
-    postal_code = serializers.CharField(max_length=20, required=False)
-    second_phone_number = serializers.CharField(max_length=15, required=False)
-    building_number = serializers.CharField(max_length=10, required=False)
-    apartment_number = serializers.CharField(max_length=10, required=False)
-    class Meta:
-        model = User
-        fields = [
-            'id', 'gender', 'first_name', 'last_name',
-            'phone_number','email', 'photo',
-            'bio', 'birth_date', 'country', 'city', 'email',
-            'district', 'street_address', 'postal_code',
-            'second_phone_number', 'building_number', 'apartment_number'
-        ]
-
 class BuyerSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(max_length=50, required=False)
     last_name = serializers.CharField(max_length=50, required=False)
@@ -112,17 +85,6 @@ class BuyerSerializer(serializers.ModelSerializer):
             'second_phone_number', 'building_number', 'apartment_number'
         ]
 
-    # def to_representation(self, instance):
-    #     representation = super().to_representation(instance)
-    #     # representation.pop('company')
-    #
-    #     if instance.user:
-    #         user_representation = UserSerializer(instance.user).data
-    #         representation.update(user_representation)
-    #
-    #     return representation
-
-
 class SellerSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(max_length=50, required=False)
     last_name = serializers.CharField(max_length=50, required=False)
@@ -138,12 +100,4 @@ class SellerSerializer(serializers.ModelSerializer):
             'district', 'street_address', 'postal_code',
             'second_phone_number', 'building_number', 'apartment_number'
         ]
-
-    # def to_representation(self, instance):
-    #     representation = super().to_representation(instance)
-    #     if instance.user:
-    #         user_representation = UserSerializer(instance.user).data
-    #         representation.update(user_representation)
-    #
-    #     return representation
 
