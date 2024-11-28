@@ -11,6 +11,9 @@ from .serializers import (VerifyCodeSerializer,BuyerSerializer,
 from rest_framework import generics, parsers
 from rest_framework.permissions import IsAuthenticated, AllowAny, DjangoModelPermissions
 from share.permissions import GeneratePermissions
+from django.contrib.auth import update_session_auth_hash
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.exceptions import ValidationError
 
 from user.models import User
 from . import services
@@ -189,3 +192,41 @@ class UsersMeView(GeneratePermissions, generics.RetrieveAPIView, generics.Update
         if not request.data['first_name']:
             return Response(status=400)
         return super().partial_update(request, *args, **kwargs)
+
+
+class ChangePasswordView(generics.UpdateAPIView):
+    permission_classes = [IsAuthenticated]
+    http_method_names = ['put']
+
+    def put(self, request, *args, **kwargs):
+        user = request.user
+        old_password = request.data.get('old_password')
+        new_password = request.data.get('new_password')
+        confirm_password = request.data.get('confirm_password')
+
+        # Eski parolni tekshirish
+        if not user.check_password(old_password):
+            raise ValidationError({"old_password": "Eski parol noto'g'ri."})
+
+        # Yangi parol va tasdiqlash parolini tekshirish
+        if new_password != confirm_password:
+            raise ValidationError({"confirm_password": "Yangi parol va tasdiqlash paroli bir xil bo'lishi kerak."})
+
+        # Yangi parol qoidalariga mosligini tekshirish (masalan, uzunligi)
+        if len(new_password) < 8:
+            raise ValidationError({"new_password": "Yangi parol kamida 8 ta belgidan iborat bo'lishi kerak."})
+
+        # Parolni yangilash
+        user.set_password(new_password)
+        user.save()
+
+        # Foydalanuvchini tizimdan chiqarmaslik uchun sessiyani yangilash
+        update_session_auth_hash(request, user)
+
+        # Yangi tokenlarni olish
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+        }, status=status.HTTP_200_OK)
