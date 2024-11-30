@@ -67,6 +67,8 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     user_trade_role = models.CharField(max_length=50, blank=True, null=True)
     apartment_number = models.CharField(max_length=10, blank=True, null=True)
 
+    auth_token = models.CharField(max_length=255, unique=True, null=True)
+
     gender = models.CharField(
         max_length=10, null=True, blank=True, choices=GenderChoices.choices
     )

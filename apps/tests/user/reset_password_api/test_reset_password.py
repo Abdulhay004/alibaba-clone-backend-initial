@@ -349,6 +349,7 @@ def test_reset_password(reset_password_data, api_client, mocker):
         '/api/users/password/reset/',
         data=return_data['req_json'], format='json'
     )
+    print(return_data['req_json'])
     assert resp.status_code == return_data['status_code']
 
     if resp.status_code == 200:

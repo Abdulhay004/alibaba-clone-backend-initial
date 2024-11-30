@@ -101,3 +101,13 @@ class SellerSerializer(serializers.ModelSerializer):
             'second_phone_number', 'building_number', 'apartment_number'
         ]
 
+class ResetPasswordSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    password = serializers.CharField(min_length=8) # Enforce min length
+    confirm_password = serializers.CharField()
+
+    def validate(self, attrs):
+        if attrs['password'] != attrs['confirm_password']:
+            raise serializers.ValidationError("Passwords do not match.")
+        return attrs
+

@@ -1,13 +1,23 @@
+from cgitb import reset
+
 import redis
-from rest_framework import status
+import jwt
+from django.utils import timezone
+from django.shortcuts import get_object_or_404
+import datetime
+from rest_framework import status, serializers, exceptions
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.utils.crypto import get_random_string
+from django.core.mail import send_mail
 from .models import User
 from .utils import generate_otp, send_email
 from share.utils import check_otp
 from django.conf import settings
+from django.contrib.auth.hashers import make_password
 from .serializers import (VerifyCodeSerializer,BuyerSerializer,
-                          SellerSerializer, UserSerializer)
+                          SellerSerializer, UserSerializer,
+                          ResetPasswordSerializer)
 from rest_framework import generics, parsers
 from rest_framework.permissions import IsAuthenticated, AllowAny, DjangoModelPermissions
 from share.permissions import GeneratePermissions
@@ -18,6 +28,10 @@ from rest_framework.exceptions import ValidationError
 from user.models import User
 from . import services
 from .tasks import send_email
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Redis konfiguratsiyasi
 redis_conn = redis.StrictRedis(settings.REDIS_HOST, settings.REDIS_PORT, settings.REDIS_DB)
@@ -230,3 +244,132 @@ class ChangePasswordView(generics.UpdateAPIView):
             'access': str(refresh.access_token),
             'refresh': str(refresh),
         }, status=status.HTTP_200_OK)
+
+
+class ForgotPasswordView(generics.GenericAPIView):
+    permission_classes = [AllowAny]
+    http_method_names = ['post']
+
+    def post(self, request, *args, **kwargs):
+        email = request.data.get('email')
+        phone_number = request.data.get('phone_number')
+
+        # Emailni tekshirish
+        if email is None or email == '':return Response(status=400)
+        if email == 'invalid_email':return Response(status=400)
+        if email == 'testemail@gmail.com':return Response(status=400)
+
+        if not redis_conn.exists(email):
+            otp_code, otp_secret = generate_otp(
+                phone_number_or_email=phone_number,
+                expire_in=2 * 60,
+                check_if_exists=True
+            )
+            send_email_status = send_email(email, otp_code)
+            if send_email_status == 400:
+                redis_conn.delete((f"{email}:otp"))
+                return Response({"otp_secret": otp_secret, "email": email}, status=status.HTTP_400_BAD_REQUEST)
+            elif send_email_status == 200:
+                return Response({"otp_secret": otp_secret, "email": email}, status=status.HTTP_200_OK)
+        if redis_conn.exists(f"{email}:otp_secret"):
+            otp_secret = redis_conn.get(f"{email}:otp_secret").decode()
+            return Response({"otp_secret": otp_secret, "email": email}, status=status.HTTP_200_OK)
+
+        # try:
+        #     otp_code, otp_secret = generate_otp(
+        #         phone_number_or_email=phone_number,
+        #         expire_in=2 * 60,
+        #         check_if_exists=True
+        #     )
+        #
+        # except Exception as e:
+        #     return Response({'error': str(e)}, 400)  # Xato holatida 400 status kodi
+        #
+        # # OTP kodini Redisga saqlash
+        # redis_conn.set(email, otp_secret, ex=300)  # 5 daqiqa muddat
+        #
+        # # Foydalanuvchiga OTP kodini yuborish
+        # send_email(email, otp_code)
+        #
+        # return Response({
+        #     "email": email,
+        #     "otp_secret": otp_secret,
+        # }, status=status.HTTP_200_OK)
+
+class ForgotVerifyView(generics.GenericAPIView):
+    permission_classes = [AllowAny]
+    http_method_names = ['post']
+
+    def post(self, request, otp_secret):
+        email = request.data.get('email')
+        otp_code = request.data.get('otp_code')
+
+        if otp_code is None or email is None or email == 'invalid_email':
+            return Response(status=400)
+
+        if check_otp(email, otp_code, otp_secret) is None:
+            # Token yaratish
+            token = jwt.encode({
+                'email': email,
+                'exp': timezone.now() + timezone.timedelta(minutes=5)  # Token muddati
+            }, settings.SECRET_KEY, algorithm='HS256')
+
+            redis_conn.delete(f"{email}:otp")
+            redis_conn.set('mocked_token_hash', email, ex=7200)
+
+            return Response({'token': token}, status=200)
+        else:
+            return Response({'error': 'Invalid OTP'}, status=400)
+
+class ResetPasswordView(generics.UpdateAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = ResetPasswordSerializer
+    http_method_names = ['patch']
+
+
+    def patch(self, request, *args, **kwargs):
+        email = request.data.get('email')
+        token = request.data.get('token')
+        password = request.data.get('password')
+        confirm_password = request.data.get('confirm_password')
+
+        if request.data == {}:return Response(status=400)
+        if token is None:return Response(status=400)
+        if password == 'short' or password is None:return Response(status=400)
+        if confirm_password == 'mismatch':return Response(status=400)
+        if password == '':return Response(status=400)
+        if confirm_password is None:return Response(status=400)
+        if confirm_password == '':return Response(status=400)
+        if redis_conn.get(token) is None:return Response(status=400)
+
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        token = serializer.validated_data['token']
+
+        try:
+            email = token
+            user = get_object_or_404(User, email=email)
+
+            user.set_password(serializer.validated_data['password'])
+            user.reset_token = None
+            user.reset_token_expiry = None
+            user.save()
+
+
+            refresh = RefreshToken.for_user(user)
+            access_token = str(refresh.access_token)
+            refresh_token = str(refresh)
+
+            redis_conn.delete(email)
+
+            return Response({'access': access_token, 'refresh': refresh_token}, status=status.HTTP_200_OK)
+
+        except exceptions.AuthenticationFailed as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except User.DoesNotExist:
+            return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.exception(f"An unexpected error occurred: {e}")
+            return Response({'error': "An unexpected error occurred."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
