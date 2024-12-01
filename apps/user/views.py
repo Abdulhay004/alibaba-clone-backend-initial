@@ -176,7 +176,7 @@ class LoginView(APIView):
 
 
 
-class UsersMeView(GeneratePermissions, generics.RetrieveAPIView, generics.UpdateAPIView):
+class UsersMeView(generics.RetrieveUpdateAPIView):
     serializer_class = UserSerializer
     http_method_names = ['get','patch']
     queryset = User.objects.all()
@@ -196,7 +196,6 @@ class UsersMeView(GeneratePermissions, generics.RetrieveAPIView, generics.Update
 
     def get_permissions(self):
         permissions = super().get_permissions()
-        # Agar foydalanuvchi 'seller' yoki 'buyer' guruhida bo'lmasa va GET so'rov qilsa, 403 status kodi qaytaring
         if self.request.method == 'GET' and \
                 not self.request.user.groups.filter(name='seller').exists() and \
                 not self.request.user.groups.filter(name='buyer').exists():

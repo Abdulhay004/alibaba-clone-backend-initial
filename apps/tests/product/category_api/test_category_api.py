@@ -117,6 +117,7 @@ class TestCategoryViewSet:
 
     def test_retrieve_category_products(self, category_factory, product_factory):
         category = category_factory.create()
+        print()
         product_factory.create_batch(3, category=category)
 
         response = self.client.get(f'{self.api}{category.id}/products/')
