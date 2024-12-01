@@ -24,3 +24,7 @@ class PolicyNameEnum(BaseEnum):
 class GenderChoices(models.TextChoices):
     MALE = 'Male', 'M'
     FEMALE = 'Female', 'F'
+
+class TokenType(str, Enum):
+    ACCESS = "access"
+    REFRESH = "refresh"

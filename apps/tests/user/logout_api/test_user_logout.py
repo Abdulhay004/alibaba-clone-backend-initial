@@ -63,6 +63,7 @@ def test_logout(logout_data, mocker, fake_redis, request, tokens):
 
     if status_code == 200:
         resp = client.get('/api/users/me/')
+        print(resp.data)
         assert resp.status_code == 401
 
     if test_name == 'test_logout[valid_with_stored_tokens]':

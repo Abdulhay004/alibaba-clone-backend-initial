@@ -24,10 +24,12 @@ from share.permissions import GeneratePermissions
 from django.contrib.auth import update_session_auth_hash
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.exceptions import ValidationError
+from drf_spectacular.utils import extend_schema
 
 from user.models import User
 from . import services
 from .tasks import send_email
+from .enums import TokenType
 
 import logging
 
@@ -178,7 +180,7 @@ class UsersMeView(GeneratePermissions, generics.RetrieveAPIView, generics.Update
     serializer_class = UserSerializer
     http_method_names = ['get','patch']
     queryset = User.objects.all()
-    permission_classes = (IsAuthenticated,)
+    permission_classes = [IsAuthenticated]
 
     def get_object(self):
         return self.request.user
@@ -275,27 +277,6 @@ class ForgotPasswordView(generics.GenericAPIView):
             otp_secret = redis_conn.get(f"{email}:otp_secret").decode()
             return Response({"otp_secret": otp_secret, "email": email}, status=status.HTTP_200_OK)
 
-        # try:
-        #     otp_code, otp_secret = generate_otp(
-        #         phone_number_or_email=phone_number,
-        #         expire_in=2 * 60,
-        #         check_if_exists=True
-        #     )
-        #
-        # except Exception as e:
-        #     return Response({'error': str(e)}, 400)  # Xato holatida 400 status kodi
-        #
-        # # OTP kodini Redisga saqlash
-        # redis_conn.set(email, otp_secret, ex=300)  # 5 daqiqa muddat
-        #
-        # # Foydalanuvchiga OTP kodini yuborish
-        # send_email(email, otp_code)
-        #
-        # return Response({
-        #     "email": email,
-        #     "otp_secret": otp_secret,
-        # }, status=status.HTTP_200_OK)
-
 class ForgotVerifyView(generics.GenericAPIView):
     permission_classes = [AllowAny]
     http_method_names = ['post']
@@ -373,3 +354,25 @@ class ResetPasswordView(generics.UpdateAPIView):
         except Exception as e:
             logger.exception(f"An unexpected error occurred: {e}")
             return Response({'error': "An unexpected error occurred."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+
+        # Foydalanuvchining tokenlarini olib tashlang
+        access_token = request.META.get('HTTP_AUTHORIZATION').split()[1]
+        refresh_token = request.COOKIES.get('refresh_token')
+
+        if access_token:
+            services.TokenService.remove_token_from_redis(user.id, access_token, TokenType.ACCESS)
+
+        if refresh_token:
+            services.TokenService.remove_token_from_redis(user.id, refresh_token, TokenType.REFRESH)
+
+        # Yangi fake token qo'shish
+        services.TokenService.add_fake_token(user.id)
+
+        return Response({"detail": "Successfully logged out"}, status=status.HTTP_200_OK)

@@ -1,7 +1,9 @@
 import redis
+import uuid
 import jwt
 import datetime
 from django.conf import settings
+from django.core.cache import cache
 from typing import Union
 from uuid import UUID
 from rest_framework.exceptions import ValidationError
@@ -77,6 +79,16 @@ class TokenService:
         token_key = f"user:{user_id}:{token_type}"
         valid_tokens = redis_client.smembers(token_key)
         return valid_tokens
+
+    @classmethod
+    def remove_token_from_redis(cls, user_id: uuid.UUID, token: str, token_type: TokenType):
+        cache.delete(f"{user_id}_{token_type}_{token}")
+
+    @classmethod
+    def add_fake_token(cls, user_id: uuid.UUID):
+        fake_token = f"fake_token_{uuid.uuid4()}"
+        expire_time = settings.SIMPLE_JWT.get("ACCESS_TOKEN_LIFETIME")
+        cls.add_token_to_redis(user_id, fake_token, TokenType.ACCESS, expire_time)
 
     @classmethod
     def add_token_to_redis(

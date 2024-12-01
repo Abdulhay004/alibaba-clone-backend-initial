@@ -1,6 +1,5 @@
 from pathlib import Path
-
-import rest_framework.authentication
+from datetime import timedelta
 from decouple import config
 import sys
 import os
@@ -131,12 +130,11 @@ AUTH_PASSWORD_VALIDATORS = [
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
+        'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.BasicAuthentication',
-        'rest_framework.authentication.TokenAuthentication',
-        'user.authentications.CustomJWTAuthentication',]
+        'user.authentications.CustomJWTAuthentication',
+    ]
 }
 
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
@@ -194,11 +192,10 @@ CELERY_TIMEZONE = 'Asia/Tashkent'
 
 # stripe setup
 
-
-# rest_framework setup
-
-
-# jwt setup
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),  # Tokenning amal qilish muddati
+}
 
 
 # logging setup
+
