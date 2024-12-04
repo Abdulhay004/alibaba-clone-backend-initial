@@ -121,6 +121,7 @@ class TestCategoryViewSet:
         product_factory.create_batch(3, category=category)
 
         response = self.client.get(f'{self.api}{category.id}/products/')
+        print(response)
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data['results']) == 3
 

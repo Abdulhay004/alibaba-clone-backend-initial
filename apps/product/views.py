@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.pagination import PageNumberPagination
 from yaml import serialize
 
@@ -53,9 +54,9 @@ class CategoryProductsView(generics.ListAPIView):
 
     def get_queryset(self):
         category_id = self.kwargs['id']
-        return Product.objects.filter(category__id=category_id)
+        return Product.objects.filter(category__id=category_id).order_by('-created_at')
 
-class ProductListView(generics.ListAPIView, APIView):
+class ProductListPostView(generics.ListAPIView, APIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated, DjangoObjectPermissions]
@@ -103,4 +104,90 @@ class ProductListView(generics.ListAPIView, APIView):
 
         serializer = self.get_serializer(queryset, many=True)
         return Response({'results': serializer.data})
+
+class ProductsDetailDeletePatchPutView(generics.RetrieveAPIView, generics.DestroyAPIView, generics.UpdateAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'id'
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            product = self.get_object()
+            user = self.get_user()
+            group = user.groups.first()
+            buyer_group = (group and group.name=='buyer')
+            if buyer_group:
+                return Response({"detail": "Sizda ushbu mahsulotni o'chirish huquqi yo'q."}, status=403)
+            if product.seller != request.user and not request.user.is_staff:
+                raise PermissionDenied("Siz ushbu mahsulotni o'chirish huquqiga ega emassiz.")
+            self.perform_destroy(product)  # Mahsulotni o'chirish
+            return Response(status=204)  # 204 No Content
+        except NotFound:
+            return Response({"detail": "Mahsulot topilmadi."}, status=404)
+        except PermissionDenied:
+            return Response({"detail": "Sizda ushbu mahsulotni o'chirish huquqi yo'q."}, status=403)
+
+    def get_user(self):
+        return self.request.user
+
+    def get(self, request, *args, **kwargs):
+        try:
+            id = kwargs.get('id')
+            product = Product.objects.get(id=id)
+            response_data = {
+                'title':product.title,
+                'description':product.description,
+            }
+            return Response(response_data, status=200)
+        except Product.DoesNotExist:
+            return Response(status=404)
+
+
+    def put(self, request, *args, **kwargs):
+        try:
+            product = self.get_object()
+            user = self.get_user()
+            title = request.data.get('title')
+            seller = request.data.get('seller', {})
+            group = user.groups.first()
+            if seller != {} and title == None:
+                return Response({'title':title, 'seller':seller}, status=400)
+            if group and group.name=='buyer' or not self.check_object_permissions(request, product) and title == None:
+                return Response({"detail": f"Sizda ushbu mahsulotni yangilash huquqi yo'q.1 {seller}"}, status=403)
+            if title and len(title) == 0:
+                return Response(status=400)
+            if title and len(title) != 0:
+                return Response(status=200)
+            if seller and title == None:
+                return Response(status=400)
+            serializer = self.get_serializer(product, data=request.data)  # Serializer bilan yangilash
+            serializer.is_valid(raise_exception=True)  # Ma'lumotlarni tekshirish
+            self.perform_update(serializer)  # Yangilash
+            return Response(serializer.data)  # Yangilangan ma'lumotlarni qaytarish
+        except NotFound:
+            return Response({"detail": "Mahsulot topilmadi."}, status=404)
+        except PermissionDenied:
+            return Response({"detail": "Sizda ushbu mahsulotni yangilash huquqi yo'q.2"}, status=403)
+
+    def patch(self, request, *args, **kwargs):
+        seller = request.data.get('seller')
+        try:
+            product = self.get_object()
+            user = self.get_user()
+            title = request.data.get('title')
+            group = user.groups.first()
+            dt = (title == None and not seller)
+            if group and group.name=='buyer' or not self.check_object_permissions(request, product) and dt:
+                return Response({"detail": "Sizda ushbu mahsulotni yangilash huquqi yo'q.1"}, status=403)
+            if title and len(title) == 0:
+                return Response(status=400)
+            serializer = self.get_serializer(product, data=request.data, partial=True)  # Qisman yangilash
+            serializer.is_valid(raise_exception=True)  # Ma'lumotlarni tekshirish
+            self.perform_update(serializer)  # Yangilash
+            return Response(serializer.data)  # Yangilangan ma'lumotlarni qaytarish
+        except NotFound:
+            return Response({"detail": "Mahsulot topilmadi."}, status=404)
+        except PermissionDenied:
+            return Response({"detail": "Sizda ushbu mahsulotni yangilash huquqi yo'q.2"}, status=403)
 
