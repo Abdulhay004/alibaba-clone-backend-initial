@@ -101,7 +101,6 @@ class TestProductCreateAPI:
             ],
             "quantity": 10
         }
-
         response = self.client.post(self.url, data=payload, format='json')
         assert response.status_code == status.HTTP_201_CREATED
         response_data = response.json()

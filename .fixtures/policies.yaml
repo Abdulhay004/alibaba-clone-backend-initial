@@ -36,6 +36,9 @@ seller_policy:
   - user.change_user_me
   - user.view_user
   - user.view_user_me
+  - product.add_product
+  - product.change_product
+  - product.delete_product
 
 buyer_policy:
   - user.view_buyeruser
@@ -45,3 +48,5 @@ buyer_policy:
   - user.change_user_me
   - user.view_user
   - user.view_user_me
+  - product.view_category
+  - product.view_product
