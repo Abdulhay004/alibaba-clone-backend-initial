@@ -14,8 +14,7 @@ logger =  logging.getLogger(__name__)
 from user.models import SellerUser
 from .models import Category, Product
 from .permissions import DjangoObjectPermissions
-from .serializers import (CategorySerializer, ProductSerializer,
-                          ProductCreateSerializer)
+from .serializers import (CategorySerializer, ProductSerializer)
 
 class CustomPagination(PageNumberPagination):
     page_size = 10
