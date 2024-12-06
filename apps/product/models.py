@@ -40,6 +40,7 @@ class Product(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     description = models.TextField(null=True)
     colors = models.ManyToManyField(Color, related_name='products_color', blank=True)
+    stock = models.PositiveIntegerField(default=0, null=True)
     sizes = models.ManyToManyField(Size, related_name='products_size', blank=True)
     quantity = models.IntegerField(null=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)

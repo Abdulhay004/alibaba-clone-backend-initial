@@ -2,6 +2,8 @@ import pytest
 from rest_framework import status
 from core import settings
 
+from product.models import Product
+
 
 @pytest.mark.order(1)
 def test_cart_app_created():
