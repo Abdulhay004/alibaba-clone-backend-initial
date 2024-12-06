@@ -9,9 +9,9 @@ sys.path.append(os.path.join(BASE_DIR, 'apps'))
 # kdkdkdsfjdfljsaflsdj
 
 
-# SECRET_KEY = "django-ins-6+-l+d2fi3saztr*nqn#h214oi)!s98+bs%@0#d90ec4#g)69j"
+# SECRET_KEY = "django-insec-6+-l+d2fi3saztr*nqn#h214oi)!s98+bs%@0#d90ec4#g)69j"
 
-# SUPERUSER_EMAIL = config('DJANGO_SUPERUSER_EMAIL')
+# SUPERUSER_EMAIL = config('DJANGO_SUPERUSR_EMAIL')
 
 # SECRET_KEY = "django-insecure-6+-l+d2fi3saztr*nqn#h214oi)!s98+bs%@0#d90ec4#g)69j"
 
