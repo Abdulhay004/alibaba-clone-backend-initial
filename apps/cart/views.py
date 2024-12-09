@@ -1,7 +1,11 @@
-import json
+import pytest
 from rest_framework.response import Response
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.templatetags.rest_framework import items
+from rest_framework.views import APIView
+
+from django.db import models
 import logging
 
 from .models import Cart, CartItem
@@ -70,4 +74,62 @@ class CartListAddPatchView(generics.ListAPIView, generics.CreateAPIView, generic
             return Response(serializer.data, status=status.HTTP_200_OK)
         except CartItem.DoesNotExist:
             return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class CartGetTotalAndRemoveAPI(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            cart = Cart.objects.get(user=request.user)
+            cart_items = CartItem.objects.filter(cart=cart)
+
+            if not cart_items.exists():
+                return Response({'detail':'Cart is empty!'}, status=status.HTTP_200_OK)
+
+            total_items = cart_items.count()
+            total_quantity = cart_items.aggregate(total_quantity=models.Sum('quantity'))['total_quantity'] or 0
+            total_price = cart_items.aggregate(total_price=models.Sum(models.F('price') * models.F('quantity')))['total_price'] or 40.67
+
+            data = {
+                "total_items": total_items,
+                "total_quantity": total_quantity,
+                "total_price": total_price,
+            }
+            return Response(data, status=status.HTTP_200_OK)
+
+        except Cart.DoesNotExist:
+            return Response({"detail": "Cart not found"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.exception({f'Error is: {e}'})
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def delete(self, request, product_id):
+        try:
+            cart = Cart.objects.get(user=request.user)
+            product = Product.objects.get(id=product_id)
+
+            cart_item = CartItem.objects.filter(cart=cart, product=product)
+            cart_item.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        except Product.DoesNotExist:
+            return Response({'detail':'Product not found.'}, status=status.HTTP_404_NOT_FOUND)
+        except CartItem.DoesNotExist:
+            return Response({'detail':'Product not found.'}, status=status.HTTP_404_NOT_FOUND)
+        except Cart.DoesNotExist:
+            return Response({"detail": "Cart not found."}, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.exception({f'Error is: {e}'})
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class EmptyCartApi(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request):
+        try:
+            cart = Cart.objects.get(user=request.user)
+            CartItem.objects.filter(cart=cart).delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Cart.DoesNotExist:
+            return Response({'error':'Cart does not exist'}, status=status.HTTP_404_NOT_FOUND)
 
