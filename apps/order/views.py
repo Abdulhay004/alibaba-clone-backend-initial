@@ -1,3 +1,4 @@
+from django.template.context_processors import request
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics
@@ -5,8 +6,10 @@ from rest_framework.permissions import IsAuthenticated
 from cart.models import Cart, CartItem
 from .models import Order, OrderItem
 from .serializers import OrderCreateSerializer, OrderSerializer
+from .permissions import IsAuthenticatedOrError
 from decimal import Decimal
 from django.db import transaction
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 
 class OrderCheckoutView(generics.CreateAPIView):
@@ -57,3 +60,23 @@ class OrderCheckoutView(generics.CreateAPIView):
             return Response({"detail": "Cart not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class OrderDetailView(generics.RetrieveAPIView):
+    queryset = Order.objects.filter(status='completed')
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'pk'
+
+    def retrieve(self, request, *args, **kwargs):
+        # Olingan orderni topish
+        instance = self.get_object()
+
+        # Agar foydalanuvchi orderning useridan bo'lmasa, 403 qaytarish
+        if instance.user != request.user:
+            return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+
+        # Agar foydalanuvchi to'g'ri bo'lsa, odatdagi retrieve metodini chaqiramiz
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+
