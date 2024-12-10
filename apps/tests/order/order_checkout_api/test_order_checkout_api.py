@@ -72,6 +72,7 @@ class TestCheckoutCreateView:
 
     def test_checkout_create_success(self):
         response = self.client.post(self.url, data=self.data, format='json')
+        print(response.data)
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data['status'] == 'pending'
         assert response.data['payment_method'] == 'card'
