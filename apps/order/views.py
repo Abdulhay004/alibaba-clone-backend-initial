@@ -1,8 +1,12 @@
+from cgitb import reset
+
 from django.template.context_processors import request
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics
 from rest_framework.permissions import IsAuthenticated
+from yaml import serialize
+
 from cart.models import Cart, CartItem
 from .models import Order, OrderItem
 from .serializers import OrderCreateSerializer, OrderSerializer
@@ -80,3 +84,28 @@ class OrderDetailView(generics.RetrieveAPIView):
         return Response(serializer.data)
 
 
+class OrderListView(generics.ListAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        group = user.groups.first()
+        if group is None:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        try:
+            # if Order.objects.filter(user=request.user, status='pending').exists():
+            #     return Response({"detail": "You have a pending order."}, status=status.HTTP_400_BAD_REQUEST)
+            queryset = self.get_queryset()
+            serializer = OrderSerializer(queryset, many=True)
+            data = serializer.data
+            return Response({'count':len(data), 'next': None,'previous': None, 'results': data}, status=status.HTTP_200_OK)
+        except Cart.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+    def get_queryset(self):
+        try:
+            user = self.request.user
+            return Order.objects.filter(user=user)
+        except Order.DoesNotExist:
+            return []
