@@ -122,6 +122,5 @@ class TestPaymentCreateView:
         }
 
         response = self.client.patch(self.url, data=incomplete_payload, format='json')
-
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data['detail'] == 'Card details are incomplete.'

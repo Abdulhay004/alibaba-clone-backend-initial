@@ -52,6 +52,7 @@ LOCAL_APPS = [
     'product',
     'cart',
     'order',
+    'payment',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + EXTERNAL_APPS + LOCAL_APPS
@@ -195,7 +196,8 @@ CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 CELERY_TASK_ALWAYS_EAGER = False
 CELERY_TIMEZONE = 'Asia/Tashkent'
 
-# stripe setup
+STRIPE_TEST_PUBLIC_KEY = config('STRIPE_TEST_PUBLIC_KEY')
+STRIPE_TEST_SECRET_KEY = config('STRIPE_TEST_SECRET_KEY')
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),  # Tokenning amal qilish muddati
