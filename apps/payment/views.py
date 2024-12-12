@@ -217,3 +217,20 @@ class PaymentCancelView(generics.GenericAPIView):
             order.status = 'canceled'
             order.save()
             return Response({'detail': 'Order successfully canceled.'}, status=status.HTTP_200_OK)
+
+class PaymentStatusView(generics.RetrieveAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, order_id):
+        # Permissionni tekshirish
+        groups = request.user.groups.first()
+        if groups == None:
+            return Response(status=403)
+        try:
+            order = Order.objects.get(id=order_id, user=request.user)
+        except Order.DoesNotExist:
+            return Response({'detail': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Order.MultipleObjectsReturned:
+            return Response({'detail': 'Multiple orders found for this ID.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({'status': order.status}, status=status.HTTP_200_OK)
