@@ -39,6 +39,7 @@ class Order(models.Model):
     total_price = models.DecimalField(max_digits=15, decimal_places=2, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=ORDER_STATUSES, default='pending')
+    transaction_id = models.CharField(max_length=100, unique=True, null=True)
 
     class Meta:
         ordering = ['-created_at']

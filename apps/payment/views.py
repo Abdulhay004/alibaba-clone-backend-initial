@@ -4,7 +4,10 @@ from rest_framework.response import Response
 from rest_framework import generics
 
 from order.models import Order
+from cart.models import Cart
 from django.conf import settings
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 
 import logging
 logger = logging.getLogger(__name__)
@@ -64,3 +67,36 @@ class PaymentInitiateView(generics.UpdateAPIView):
         except Exception as e:
             logger.exception({f'Error is {e}'})
             return Response({'error': str(e)}, status=400)
+
+class PaymentConfirmView(generics.UpdateAPIView):
+    @method_decorator(csrf_exempt)  # CSRF himoyasini o'chirish
+    def patch(self, request, order_id):
+        try:
+            if not Order.objects.filter(status='pending').exists():
+                return Response({'detail': 'Order payment status cannot be updated.'}, status=400)
+            if not request.user.is_authenticated:
+                return Response(status=401)
+            groups = request.user.groups.first()
+            if groups == None:
+                return Response(status=403)
+
+            client_secret = request.data.get('client_secret')
+
+            order = Order.objects.get(id=order_id)
+            transaction_id = order.transaction_id
+
+            payment_intent = stripe.PaymentIntent.confirm(transaction_id)
+            order.status = 'paid'
+            order.save()
+
+            Cart.objects.filter(user=request.user).delete()
+
+            if payment_intent['status'] == 'succeeded':
+                return Response({'status': 'succeeded'}, status=200)
+            else:
+                return Response({'detail': 'Order payment status cannot be updated.'}, status=400)
+
+        except stripe.error.StripeError as e:
+            return Response({'error': str(e)}, status=400)
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
