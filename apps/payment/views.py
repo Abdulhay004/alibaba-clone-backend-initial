@@ -192,3 +192,28 @@ class PaymentSuccessView(generics.GenericAPIView):
         except Exception as e:
             logger.exception({f'Error is {e}'})
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class PaymentCancelView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, order_id):
+        # Permissionni tekshirish
+        groups = request.user.groups.first()
+        if groups == None:
+            return Response(status=403)
+        try:
+            order = Order.objects.get(id=order_id, user=request.user)
+        except Order.DoesNotExist:
+            return Response({'detail': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
+        except Order.MultipleObjectsReturned:
+            return Response({'detail': 'Multiple orders found for this ID.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+        if order.status == 'canceled': # Crucial check
+            return Response({'detail': 'Order already canceled.'}, status=status.HTTP_400_BAD_REQUEST)
+        elif order.status == 'paid' or order.status == 'shipped' or order.status == 'delivered':
+            return Response({'detail': 'Order cannot be canceled.'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            order.status = 'canceled'
+            order.save()
+            return Response({'detail': 'Order successfully canceled.'}, status=status.HTTP_200_OK)
