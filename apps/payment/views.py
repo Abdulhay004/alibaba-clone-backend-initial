@@ -1,7 +1,8 @@
 import stripe
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
-from rest_framework import generics
+from rest_framework import generics, status
+from rest_framework.permissions import IsAuthenticated
 
 from order.models import Order
 from cart.models import Cart
@@ -10,6 +11,9 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 
 import logging
+
+from user.serializers import ResetPasswordSerializer
+
 logger = logging.getLogger(__name__)
 
 # Stripe API kalitlarini sozlash
@@ -100,3 +104,47 @@ class PaymentConfirmView(generics.UpdateAPIView):
             return Response({'error': str(e)}, status=400)
         except Exception as e:
             return Response({'error': str(e)}, status=500)
+
+class PaymentCreateLinkView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, id):
+        try:
+            if Order.objects.filter(id=id, status='canceled').exists():
+                return Response({'detail':'Order already canceled.'}, status=400)
+            if not Order.objects.filter(id=id, status='pending').exists():
+                return Response({'detail':'Order cannot be updated.'}, status=400)
+            groups = request.user.groups.first()
+            if groups == None:
+                return Response(status=403)
+
+            order = Order.objects.get(id=id, user=request.user, status='pending')
+        except Order.DoesNotExist:
+            return Response({'detail': 'Order not found or not pending.'}, status=status.HTTP_404_NOT_FOUND)
+        except Order.MultipleObjectsReturned:
+            return Response({'detail': 'Multiple orders found for this ID.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+        try:
+            session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=[
+                    {
+                        'price': 'YOUR_PRICE_ID', # Replace with your actual price ID
+                        'quantity': 1,
+                    },
+                ],
+                mode='payment',
+                success_url=request.build_absolute_uri('api/payment/'+str(order.pk)+'/success/'),
+                cancel_url=request.build_absolute_uri('api/payment/'+str(order.pk)+'/cancel/'),
+                metadata={"order_id": order.id}
+            )
+            order.transaction_id = session['id']
+            order.save()
+            return Response({'url': session['url']}, status=status.HTTP_200_OK)
+
+        except stripe.error.StripeError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.exception({f'Error is {e}'})
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
