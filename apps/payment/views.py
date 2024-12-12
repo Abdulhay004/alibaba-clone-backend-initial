@@ -114,6 +114,8 @@ class PaymentCreateLinkView(generics.GenericAPIView):
                 return Response({'detail':'Order already canceled.'}, status=400)
             if not Order.objects.filter(id=id, status='pending').exists():
                 return Response({'detail':'Order cannot be updated.'}, status=400)
+
+            # Guruhni tekshirish
             groups = request.user.groups.first()
             if groups == None:
                 return Response(status=403)
@@ -142,6 +144,48 @@ class PaymentCreateLinkView(generics.GenericAPIView):
             order.transaction_id = session['id']
             order.save()
             return Response({'url': session['url']}, status=status.HTTP_200_OK)
+
+        except stripe.error.StripeError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.exception({f'Error is {e}'})
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PaymentSuccessView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated] # Crucial: Add permission
+
+    def patch(self, request, order_id):
+        # Permissionni tekshirish
+        groups = request.user.groups.first()
+        if groups == None:
+            return Response(status=403)
+        try:
+            order = Order.objects.get(id=order_id, user=request.user)
+        except Order.DoesNotExist:
+            return Response({'detail': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
+        except Order.MultipleObjectsReturned:
+            return Response({'detail': 'Multiple orders found for this ID.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if order.status != 'pending' and order.status != 'new': # Crucial check
+            return Response({'detail': 'Order cannot be updated.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Crucial: Check if transaction ID exists.
+            if not order.transaction_id:
+                return Response({'detail': 'Transaction ID is missing.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            session = stripe.checkout.Session.retrieve(order.transaction_id)
+
+            if session['payment_status'] == 'paid':
+                order.status = 'paid'
+                order.is_paid = True
+                order.save()
+                return Response({'detail': 'Order updated successfully.'}, status=status.HTTP_200_OK)
+            else:
+                order.status = 'failed' # Important
+                order.save()
+                return Response({'detail': 'Payment failed.'}, status=status.HTTP_400_BAD_REQUEST)
 
         except stripe.error.StripeError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
