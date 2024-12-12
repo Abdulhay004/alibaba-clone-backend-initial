@@ -1,8 +1,4 @@
-import json
-
 import stripe
-from django.views import View
-from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework import generics
@@ -30,11 +26,10 @@ class PaymentInitiateView(generics.UpdateAPIView):
                 return Response({'detail':'Order has been delivered.'}, status=400)
             if Order.objects.filter(id=order_id, status='canceled').exists():
                 return Response({'detail':'Order already canceled.'}, status=400)
-            data = json.loads(request.body)
-            card_number = data.get('card_number')
-            expiry_month = data.get('expiry_month')
-            expiry_year = data.get('expiry_year')
-            cvc = data.get('cvc')
+            card_number = request.data.get('card_number')
+            expiry_month = request.data.get('expiry_month')
+            expiry_year = request.data.get('expiry_year')
+            cvc = request.data.get('cvc')
 
             # Karta ma'lumotlari to'liq emasligini tekshirish
             if not all([len(card_number), len(expiry_month), len(expiry_year), len(cvc)]):
