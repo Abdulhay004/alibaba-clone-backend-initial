@@ -40,7 +40,7 @@ class TestProductAPIs:
         client = api_client()
         response = client.get(f'{self.url}{self.product.id}/')
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    #
+
     def test_delete_product_no_permission(self):
         response = self.buyer_client.delete(f'{self.url}{self.product.id}/')
         assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -55,7 +55,6 @@ class TestProductAPIs:
 
     def test_delete_with_no_author_product_no_permission(self):
         response = self.seller_client_2.delete(f'{self.url}{self.product.id}/')
-        print(response.data)
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_patch_with_no_author_product_no_permission(self):
@@ -110,7 +109,6 @@ class TestProductAPIs:
 
     def test_delete_product(self):
         response = self.seller_client.delete(f'{self.url}{self.product.id}/')
-        print(response.data)
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
         response = self.seller_client.get(f'{self.url}{self.product.id}/')

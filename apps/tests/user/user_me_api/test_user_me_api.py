@@ -1,8 +1,8 @@
 import pytest
-from drf_yasg.openapi import Response
 
 from user.models import User, Group
 from user.models import SellerUser, BuyerUser
+
 
 @pytest.fixture
 def user_me_data(request, user_factory, tokens):
@@ -140,8 +140,7 @@ def test_user_read(request, user_read_data, api_client):
             assert sorted(resp_json.keys()) == sorted(
                 user_data
             )
-        print(sorted(resp_json))
-        assert sorted(resp_json) == sorted(
+        assert sorted(resp_json.keys()) == sorted(
             user_data
         )
         try:

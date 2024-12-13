@@ -153,7 +153,6 @@ def test_verify_otp(
         data=return_data["req_json"],
         format='json'
     )
-    print(return_data["otp_secret"])
 
     assert resp.status_code == status_code
 

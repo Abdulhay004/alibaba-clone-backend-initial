@@ -35,6 +35,7 @@ class TestPaymentConfirmView:
         }
 
         response = self.client.patch(self.url, data=payload, format='json')
+
         assert response.status_code == status.HTTP_200_OK
         assert 'status' in response.data
         assert response.data['status'] == 'succeeded'

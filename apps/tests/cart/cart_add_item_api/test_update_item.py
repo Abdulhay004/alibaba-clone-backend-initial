@@ -28,7 +28,6 @@ class TestUpdateItemQuantityView:
             'quantity': 3
         }
         response = self.client.patch(self.url, data, format='json')
-        print(response.data)
         assert response.status_code == status.HTTP_200_OK
         self.cart_item.refresh_from_db()
         assert self.cart_item.quantity == 3
