@@ -33,7 +33,7 @@ class OrderCheckoutView(generics.CreateAPIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
         try:
-            with transaction.atomic(): # Ensure atomicity of order creation
+            with transaction.atomic():
                 cart = Cart.objects.get(user=request.user)
                 if not cart.items.exists():
                     return Response({"detail": "Cart is empty"}, status=status.HTTP_400_BAD_REQUEST)
@@ -47,7 +47,7 @@ class OrderCheckoutView(generics.CreateAPIView):
                     order_items_data.append({
                         'product': item.product,
                         'quantity': item.quantity,
-                        'price': item.product.price, #get price from product
+                        'price': item.product.price,
                     })
                     total_price += item.product.price * item.quantity
 
@@ -55,7 +55,6 @@ class OrderCheckoutView(generics.CreateAPIView):
                 order_data = {**serializer.validated_data, 'user': request.user, 'total_price': total_price, 'order_items': order_items_data}
                 order = OrderSerializer().create(order_data)
 
-                # Clear cart after successful order creation
                 cart.items.clear()
 
                 return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
