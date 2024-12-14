@@ -19,3 +19,12 @@ class CouponView(generics.ListAPIView, generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
+
+class CouponUpdateAndDeleteView(generics.UpdateAPIView, generics.DestroyAPIView):
+    queryset = Coupon.objects.all()
+    serializer_class = CouponSerializer
+    permission_classes = [permissions.IsAuthenticated, IsSeller]
+    lookup_field = 'id'
+
+    def perform_update(self, serializer):
+        serializer.save()
