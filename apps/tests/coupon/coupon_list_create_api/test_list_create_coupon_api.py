@@ -64,7 +64,6 @@ class TestCouponListCreateView:
         self.create_coupon(code="SAVE20", discount_type='fixed', discount_value=20)
 
         response = self.client.get(self.url)
-
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data['results']) == 2
         for coupon in response.data['results']:

@@ -14,7 +14,7 @@ logger =  logging.getLogger(__name__)
 
 from user.models import SellerUser
 from .models import Category, Product
-from .permissions import DjangoObjectPermissions
+from .permissions import DjangoObjectPermissions, IsSellerOrAdmin
 from .serializers import (CategorySerializer, ProductSerializer)
 
 class CustomPagination(PageNumberPagination):
@@ -42,19 +42,12 @@ class CategoryDetailView(generics.RetrieveAPIView):
 class CategoryProductsView(generics.ListAPIView):
     serializer_class = ProductSerializer
     pagination_class = CustomPagination
-
-    def get_permissions(self):
-        permissions = super().get_permissions()
-        if self.request.method == 'GET' and \
-                not self.request.user.groups.filter(name='seller').exists() and \
-                not self.request.user.groups.filter(name='buyer').exists():
-            self.permission_denied(self.request)  # 403 status kodi
-
-        return permissions
+    permission_classes = [IsAuthenticated, IsSellerOrAdmin]
 
     def get_queryset(self):
         category_id = self.kwargs['id']
         return Product.objects.filter(category__id=category_id).order_by('-created_at')
+
 
 class ProductListPostView(generics.ListAPIView, APIView):
     queryset = Product.objects.all()

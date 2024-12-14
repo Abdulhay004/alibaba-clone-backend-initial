@@ -10,11 +10,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.crypto import get_random_string
 from django.core.mail import send_mail
+
 from .models import User
 from .utils import generate_otp, send_email
 from share.utils import check_otp
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
+from .permissions import IsValidUser
 from .serializers import (VerifyCodeSerializer,BuyerSerializer,
                           SellerSerializer, UserSerializer,
                           ResetPasswordSerializer)
@@ -180,7 +182,7 @@ class UsersMeView(generics.RetrieveUpdateAPIView):
     serializer_class = UserSerializer
     http_method_names = ['get','patch']
     queryset = User.objects.all()
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsValidUser]
 
     def get_object(self):
         return self.request.user
@@ -193,15 +195,6 @@ class UsersMeView(generics.RetrieveUpdateAPIView):
         elif  group and group.name=='buyer' and self.request.method=='GET':
                 return BuyerSerializer
         return self.serializer_class
-
-    def get_permissions(self):
-        permissions = super().get_permissions()
-        if self.request.method == 'GET' and \
-                not self.request.user.groups.filter(name='seller').exists() and \
-                not self.request.user.groups.filter(name='buyer').exists():
-            self.permission_denied(self.request)  # 403 status kodi
-
-        return permissions
 
     def patch(self, request, *args, **kwargs):
         if not request.data['first_name']:

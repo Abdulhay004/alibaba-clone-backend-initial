@@ -54,6 +54,7 @@ LOCAL_APPS = [
     'order',
     'payment',
     'notification',
+    'coupon',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + EXTERNAL_APPS + LOCAL_APPS

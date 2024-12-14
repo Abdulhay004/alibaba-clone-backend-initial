@@ -28,3 +28,11 @@ class SellerPermission(permissions.BasePermission):
             seller = getattr(request.user, 'seller', None)  # Foydalanuvchiga tegishli seller obyekti
             return seller is not None and seller.has_permission()  # has_permission() metodi sizning modelingizda aniqlanishi kerak
         return False
+
+class IsSellerOrAdmin(permissions.BasePermission):
+    def has_permission(self, request, view):
+        groups = request.user.groups.first()
+        if groups == None or groups == 'buyer':
+            return False
+        else:
+            return True

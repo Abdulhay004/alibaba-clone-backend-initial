@@ -26,6 +26,20 @@ admin_policy:
   - user.view_all_users
   - user.view_user
   - user.view_user_me
+  - coupon.add_coupon
+  - coupon.change_coupon
+  - coupon.delete_coupon
+  - coupon.view_coupon
+  - cart.add_cartitem
+  - cart.change_cartitem
+  - cart.delete_cartitem
+  - cart.view_cart
+  - notification.view_notification
+  - notification.delete_notification
+  - order.view_order
+  - order.change_order
+  - order.delete_order
+
 
 
 seller_policy:
@@ -39,6 +53,13 @@ seller_policy:
   - product.add_product
   - product.change_product
   - product.delete_product
+  - coupon.view_coupon
+  - coupon.claim_coupon
+  - cart.view_cart
+  - cart.view_cartitem
+  - notification.view_notification
+  - order.view_order
+  - order.change_order_status
 
 buyer_policy:
   - user.view_buyeruser
@@ -50,3 +71,13 @@ buyer_policy:
   - user.view_user_me
   - product.view_category
   - product.view_product
+  - coupon.view_coupon
+  - coupon.use_coupon
+  - cart.add_cartitem
+  - cart.change_cartitem
+  - cart.delete_cartitem
+  - cart.view_cart
+  - notification.view_notification
+  - order.create_order
+  - order.view_order
+  - order.cancel_order

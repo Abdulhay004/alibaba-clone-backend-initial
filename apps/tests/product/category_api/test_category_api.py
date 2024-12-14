@@ -6,8 +6,8 @@ from core import settings
 @pytest.mark.order(1)
 def test_product_app_created():
     assert "product" in settings.INSTALLED_APPS, "product app not installed"
-
-
+#
+#
 @pytest.mark.order(2)
 def test_product_app_exists():
     app_name = 'product'
@@ -120,6 +120,7 @@ class TestCategoryViewSet:
         product_factory.create_batch(3, category=category)
 
         response = self.client.get(f'{self.api}{category.id}/products/')
+        print(response)
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data['results']) == 3
 
