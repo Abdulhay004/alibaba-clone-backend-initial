@@ -37,3 +37,13 @@ class WishlistView(generics.ListCreateAPIView, generics.GenericAPIView):
         serializer = self.get_serializer(wishlist_item)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+class WishlistDetailAndDeleteView(generics.RetrieveAPIView, generics.DestroyAPIView):
+    queryset = Wishlist.objects.all()
+    serializer_class = WishlistSerializer
+    permission_classes = [IsAuthenticated, IsSellerOrBuyer]
+    lookup_field = 'id'
+
+    def get_queryset(self):
+        user = self.request.user
+        return self.queryset.filter(created_by=user)
