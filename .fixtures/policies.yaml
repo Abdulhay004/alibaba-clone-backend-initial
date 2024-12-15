@@ -39,6 +39,10 @@ admin_policy:
   - order.view_order
   - order.change_order
   - order.delete_order
+  - wishlist.add_wishlist
+  - wishlist.change_wishlist
+  - wishlist.delete_wishlist
+  - wishlist.view_wishlist
 
 
 
@@ -60,6 +64,9 @@ seller_policy:
   - notification.view_notification
   - order.view_order
   - order.change_order_status
+  - wishlist.add_wishlist
+  - wishlist.change_wishlist
+  - wishlist.view_wishlist
 
 buyer_policy:
   - user.view_buyeruser
@@ -81,3 +88,4 @@ buyer_policy:
   - order.create_order
   - order.view_order
   - order.cancel_order
+  - wishlist.view_wishlist
