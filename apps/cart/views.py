@@ -5,6 +5,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.templatetags.rest_framework import items
 from rest_framework.views import APIView
 
+from decimal import Decimal
+
 from django.db import models
 import logging
 
@@ -88,7 +90,7 @@ class CartGetTotalAndRemoveAPI(APIView):
 
             total_items = cart_items.count()
             total_quantity = cart_items.aggregate(total_quantity=models.Sum('quantity'))['total_quantity'] or 0
-            total_price = cart_items.aggregate(total_price=models.Sum(models.F('price') * models.F('quantity')))['total_price'] or 40.67
+            total_price = cart_items.aggregate(total_price=models.Sum(models.F('price') * models.F('quantity')))['total_price'] or Decimal('40.67')
 
             data = {
                 "total_items": total_items,
