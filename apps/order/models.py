@@ -33,7 +33,7 @@ class Order(models.Model):
     city = models.CharField(max_length=100)
     state_province_region = models.CharField(max_length=100, blank=True, null=True)
     postal_zip_code = models.CharField(max_length=20)
-    telephone_number = models.CharField(max_length=50, null=True)
+    telephone_number = models.CharField(max_length=100, null=True)
     address_line_1 = models.CharField(max_length=255)
     address_line_2 = models.CharField(max_length=255, blank=True, null=True)
     total_price = models.DecimalField(max_digits=15, decimal_places=2, null=True)
