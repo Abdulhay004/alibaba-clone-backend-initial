@@ -1,4 +1,3 @@
-from django.db.models.query_utils import select_related_descend
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
