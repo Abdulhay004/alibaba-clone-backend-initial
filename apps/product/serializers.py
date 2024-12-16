@@ -41,7 +41,7 @@ class ProductSerializer(serializers.ModelSerializer):
     colors = ColorSerializer(many=True, required=False)
     sizes = SizeSerializer(many=True, required=False)
     images = ImageSerializer(many=True, required=False)
-    price = serializers.FloatField()
+    price = serializers.DecimalField(max_digits=10, decimal_places=2)
     uploaded_images = serializers.ListField(child=serializers.ImageField(), required=False)
     class Meta:
         model = Product
