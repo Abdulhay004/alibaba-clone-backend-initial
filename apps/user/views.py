@@ -1,4 +1,5 @@
 from cgitb import reset
+from logging import lastResort
 
 import redis
 import jwt
@@ -45,20 +46,22 @@ class SignUpView(APIView):
     def post(self, request):
         phone_number = request.data.get('phone_number')
         email = request.data.get('email')
+        first_name = request.data.get('first_name')
+        last_name = request.data.get('last_name')
 
-        # Yangi foydalanuvchini yaratish
+        if first_name == None or last_name == None:
+            return Response(status=400)
+
         user = User.objects.create(
-            username=request.data.get('username'),  # id ga tenglashtirish kerak
             phone_number=phone_number,
-            first_name=request.data.get('first_name'),
-            last_name=request.data.get('last_name'),
+            first_name=first_name,
+            last_name=last_name,
             email=email,
             is_verified=False,
             is_staff=False,
             is_active=False,
         )
 
-        # Redisda telefon raqami mavjudligini tekshirish
         if redis_conn is None:
                print("redis_conn is not initialized.")
         else:
