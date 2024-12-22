@@ -127,6 +127,6 @@ class TestApplyCouponView:
         }
 
         response = self.client.post(self.url, data)
-        print(response.data)
+
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data['coupon_code'] == ['The coupon code is not yet valid.']
