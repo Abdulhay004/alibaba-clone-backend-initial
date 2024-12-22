@@ -40,7 +40,7 @@ jobs:
       - name: Checkout original repository
         uses: actions/checkout@v3
         with:
-          repository: Mohirdevelopers/alibaba-clone-backend-initial
+          repository: Mohirdevelopers/alibaba-clone-backend-initial-TRASH_DIRECTORY
           path: original-repo
           ref: main
           fetch-depth: 0

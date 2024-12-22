@@ -44,7 +44,7 @@ class PaymentInitiateView(generics.UpdateAPIView):
 
 
             # Stripe to'lovni yaratish
-            payment_intent = stripe.PaymentIntent.retrieve(
+            payment_intent = stripe.PaymentIntent.create(
                 amount=1000,
                 currency='usd',
                 payment_method_data={
@@ -61,8 +61,9 @@ class PaymentInitiateView(generics.UpdateAPIView):
 
             order.status = 'completed'
             order.save()
+            retrieve = stripe.PaymentIntent.retrieve(payment_intent['id'])
 
-            return Response({'client_secret': payment_intent['client_secret']}, status=200)
+            return Response({'client_secret': retrieve['client_secret']}, status=200)
 
         except stripe.error.CardError as e:
             return Response({'detail': str(e)}, status=400)

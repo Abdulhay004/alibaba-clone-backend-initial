@@ -36,13 +36,7 @@ EXTERNAL_APPS = [
     'rest_framework_simplejwt',
     'drf_spectacular',
     'django_redis',
-    # 'django.contrib.contenttypes',
-    # 'modeltranslation',
-    # 'django_filters',
-    # 'rest_framework.authtoken',
     'drf_yasg',
-    # 'ckeditor',
-    # 'ckeditor_uploader',
 ]
 
 
