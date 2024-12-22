@@ -13,14 +13,14 @@ sys.path.append(os.path.join(BASE_DIR, 'apps'))
 
 # SUPERUSER_EMAIL = config('DJANGO_SU_EMAIL')
 
-# SECRET_KEY = "django-insecure-6+-l+d2fi3saztr*nqn#h214oi)!s98+bs%@0#d90ec4#g)69j"
+SECRET_KEY = "django-insecure-6+-l+d2fi3saztr*nqn#h214oi)!s98+bs%@0#d90ec4#g)69j"
 
 
-SECRET_KEY = config('SECRET_KEY')
+# SECRET_KEY = config('SECRET_KEY')
 
-DEBUG = config('DEBUG')
+DEBUG = 0
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '46.101.212.69:8000']
 
 DJANGO_APPS = [
     'django.contrib.admin',

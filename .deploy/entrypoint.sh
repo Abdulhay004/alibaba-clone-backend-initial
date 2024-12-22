@@ -35,7 +35,7 @@ echo "Successfully collected static files"
 echo "Compiling translation messages"
 django-admin compilemessages
 echo "Successfully compiled messages"
-
+python manage.py initial_data
 # Starting server
 echo "Starting server"
-gunicorn core.wsgi:application --bind 0.0.0.0:8000
+gunicorn --timeout 120 -w -4 core.wsgi:application --bind 0.0.0.0:8000
