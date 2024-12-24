@@ -112,6 +112,7 @@ class SignUpView(APIView):
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 class VerifyView(APIView):
+    serializer_class = VerifyCodeSerializer
     def patch(self, request, otp_secret:str):
 
         serializer = VerifyCodeSerializer(data=request.data)
